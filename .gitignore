@@ -1,0 +1,11 @@
+# Ignore all environment variable files
+.env
+.env.local
+.env.*.local
+
+# Exception for template files
+!.env.example
+
+# Ignore virtual environment file (wont work if changing the virtual environment name [need to add if so])
+.venv
+
