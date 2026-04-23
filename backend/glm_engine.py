@@ -7,42 +7,35 @@ load_dotenv()
 
 class GLAIEngine:
     def __init__(self):
-        """Initializes the connection to the Z.AI GLM API."""
-        self.api_url = os.environ.get("ZAI_API_URL", "https://api.z.ai/v1/chat/completions") 
+        """Initializes the live connection to the Z.AI / ilmu.ai API."""
+        self.api_url = os.environ.get("ZAI_API_URL") 
         self.api_key = os.environ.get("ZAI_API_KEY")
 
     def analyze_and_match(self, raw_ocr_text: str, buyers_list: list) -> dict:
         """
-        Sends the messy text to the GLM. If no API key exists, it returns a Mock result 
-        so the frontend team isn't blocked.
+        Sends the messy OCR text and the Supabase buyer list to the AI for live analysis.
         """
-        # --- MOCK MODE (For Local Testing without an API Key) ---
-        if not self.api_key or self.api_key == "1f6f12ed961c4664b60573ce2a940a96.RztcLgrw8GVuYcLN" or self.api_key == "":
-            print("\n⚠️ MOCK MODE ACTIVATED: No real Z.AI API key found.")
-            print("Returning simulated AI response for frontend testing...\n")
-            
-            # This is exactly what the real AI will eventually output
-            return {
-                "material_detected": "Untreated Wood Dust (Meranti)",
-                "quantity_detected": "Unknown (Estimated Bulk)",
-                "best_buyer_match": "Aisha Fungi Farms",
-                "reasoning": "Aisha Fungi Farms specifically requires wood dust for agricultural substrate in Selangor and has a budget of RM1500, making this a highly profitable synergy.",
-                "estimated_profit_myr": "RM 800.00"
-            }
+        if not self.api_key or not self.api_url:
+            return {"error": "Critical: API credentials missing from .env file."}
 
-        # --- REAL PRODUCTION MODE (Runs when you get your hackathon key) ---
+        # --- REINFORCEMENT: TRUNCATION ---
+        # Limits the text size to prevent the model from hanging on messy OCR
+        raw_ocr_text = raw_ocr_text[:3000]
+
+        # --- THE SYSTEM PROMPT ---
         system_prompt = f"""
         You are 'ScrapSync', an elite industrial waste broker. 
         Read this unstructured OCR text: "{raw_ocr_text}"
-        Match it against these buyers: {json.dumps(buyers_list, indent=2)}
+        Match it against these available buyers: {json.dumps(buyers_list, indent=2)}
 
-        You MUST respond STRICTLY in JSON format:
+        You MUST respond STRICTLY in JSON format with no markdown formatting or extra conversational text. 
+        Use this exact schema:
         {{
             "material_detected": "string",
             "quantity_detected": "string or 'Unknown'",
             "best_buyer_match": "Company Name",
             "reasoning": "A 2-sentence explanation of why this is the best match.",
-            "estimated_profit_myr": "Calculate an estimate based on the buyer's max budget"
+            "estimated_profit_myr": "Calculate the exact profit by multiplying the detected quantity by the buyer's offered price per unit. If quantity is unknown, output the buyer's max budget."
         }}
         """
 
@@ -51,18 +44,28 @@ class GLAIEngine:
             "Content-Type": "application/json"
         }
 
+        # NOTE: Using the UM Hackathon provisioned model
         payload = {
-            "model": "glm-4", 
+            "model": "ilmu-glm-5.1", 
             "messages": [{"role": "system", "content": system_prompt}],
             "temperature": 0.2 
         }
 
         try:
-            response = requests.post(self.api_url, headers=headers, json=payload)
+            # --- REINFORCEMENT: TIMEOUT ---
+            # Set to 60s to give the AI enough time to handle complex matching
+            response = requests.post(self.api_url, headers=headers, json=payload, timeout=60)
             response.raise_for_status()
+            
+            # Extract the AI's answer
             ai_message = response.json()["choices"][0]["message"]["content"]
+            
+            # Clean up the response to ensure it is pure JSON
             ai_message = ai_message.replace("```json", "").replace("```", "").strip()
+            
             return json.loads(ai_message)
 
+        except requests.exceptions.Timeout:
+            return {"error": "The AI took too long to respond (504 Timeout). The server might be busy. Please try again in a few seconds."}
         except Exception as e:
-            return {"error": f"Failed to communicate with Z.AI: {str(e)}"}
+            return {"error": f"Failed to communicate with the AI API: {str(e)}"}
