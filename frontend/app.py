@@ -161,7 +161,9 @@ if not st.session_state.authenticated:
 # MAIN APPLICATION (Only runs if logged in)
 # ==========================================
 
-API_URL = "http://127.0.0.1:8000/upload-waste"
+# Use BACKEND_URL from environment variables for production, otherwise default to local
+BASE_API_URL = os.environ.get("BACKEND_URL", "http://127.0.0.1:8000")
+API_URL = f"{BASE_API_URL}/upload-waste"
 
 def get_ytd_profit():
     if supabase:
@@ -563,7 +565,7 @@ if st.session_state.show_checkout:
                     try:
                         amount_in_sen = int(cd['total_cost'] * 100)
                         
-                        # Tell Stripe to create an FPX transaction
+                        frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:8501")
                         intent = stripe.PaymentIntent.create(
                             amount=amount_in_sen,
                             currency="myr",
@@ -573,7 +575,7 @@ if st.session_state.show_checkout:
                                 "fpx": {"bank": selected_bank_code}
                             },
                             confirm=True,
-                            return_url=f"http://localhost:8501/?logged_in=true&user={st.session_state.user_email}", 
+                            return_url=f"{frontend_url}/?logged_in=true&user={st.session_state.user_email}", 
                             description=f"ScrapSync: {cd['volume']}kg {cd['material']}"
                         )
                         
