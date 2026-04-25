@@ -4,6 +4,9 @@
 
 **ScrapSync** is an AI-powered B2B reverse-matchmaking platform designed to power the circular economy. It connects industrial manufacturers with local buyers and recyclers, transforming industrial waste (like untreated sawdust and copper wire) into profitable, reusable raw materials.
 
+## 📁 Project Structure
+![ScrapSync Logo](scrapsync_logo.jpg)
+
 ## ✨ Key Features
 
 * 🧠 **AI Synergy Engine:** Upload single or batch PDF/image waste manifests. Gemini API instantly extracts visual text, calculates transport vs. material costs, and finds the most profitable local buyer.
@@ -29,8 +32,7 @@ Follow these instructions to run the ScrapSync application on your local machine
 git clone https://github.com/Axelzy/scrap-sync.git
 cd scrapsync
 
-## 📁 Project Structure
-![ScrapSync Logo](scrapsync_logo.jpg)
+
 
 # 1. Setup
 Run pip install -r requirements.txt.
