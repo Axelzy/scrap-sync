@@ -6,7 +6,7 @@
 
 ## ✨ Key Features
 
-* 🧠 **AI Synergy Engine:** Upload single or batch PDF/image waste manifests. The Z.AI Copilot instantly extracts visual text, calculates transport vs. material costs, and finds the most profitable local buyer.
+* 🧠 **AI Synergy Engine:** Upload single or batch PDF/image waste manifests. Gemini API instantly extracts visual text, calculates transport vs. material costs, and finds the most profitable local buyer.
 * 💳 **Live FPX B2B Payments:** Fully integrated with the **Stripe API**, allowing users to execute digital twin smart contracts and process mock B2B banking transactions via Malaysian FPX gateways (Maybank2U, CIMB Clicks, etc.).
 * 🔮 **Predictive Insights:** Forecasts weekly waste generation patterns, alerting factories to pre-optimize logistics and lock in regional market rates before seasonal oversupply drops prices.
 * 📋 **Corporate Ledger:** An immutable, real-time transaction ledger powered by **Supabase PostgreSQL**.
@@ -28,3 +28,11 @@ Follow these instructions to run the ScrapSync application on your local machine
 ```bash
 git clone [https://github.com/YOUR-USERNAME/scrapsync.git](https://github.com/YOUR-USERNAME/scrapsync.git)
 cd scrapsync
+
+# 1. Setup
+Run `pip install -r requirements.txt`.
+
+# 2. How to run
+
+1. Run `python backend/main.py`.
+2. Then in new terminal, run `python -m streamlit run frontend/app.py`.
