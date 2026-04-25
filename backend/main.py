@@ -3,6 +3,11 @@ import pytesseract
 from PIL import Image
 import fitz  # PyMuPDF
 import io
+from dotenv import load_dotenv
+import os
+
+# Load environment variables
+load_dotenv()
 
 # Import our custom ScrapSync modules
 from db_client import DatabaseManager
@@ -11,7 +16,8 @@ from glm_engine import GLAIEngine
 # --- WINDOWS TESSERACT SETUP ---
 # Ensure this matches the folder where Tesseract was actually installed on your machine.
 # If it's in the x86 folder, change it to: r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
+# pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
+pytesseract.pytesseract.tesseract_cmd = os.getenv("TESSERACT_CMD_PATH")
 
 # --- INITIALIZE THE APPLICATION ---
 app = FastAPI(title="ScrapSync API Engine")
