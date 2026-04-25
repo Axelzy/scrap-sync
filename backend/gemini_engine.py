@@ -89,7 +89,6 @@ class GeminiEngine:
                - Trucks Needed = Round up ({volume_kg} / 1000kg)
                - Transport Cost = (distance_km * RM 1.50 * Trucks Needed)
                - Total Landed Cost = Material Cost + Transport Cost
-            2. SELECT THE WINNER: You MUST select the supplier with the absolute LOWEST Total Landed Cost.
 
             You MUST respond STRICTLY in JSON format using this exact schema:
             {{
