@@ -191,12 +191,10 @@ else:
                                 "revenue": float(raw_profit) if raw_profit.replace('.','',1).isdigit() else 0.0,
                                 "buyer": match.get("best_buyer_match")
                             }).execute()
-                            st.balloons()
                             st.success("Transaction recorded in live Supabase ledger!")
                         except Exception as e:
                             st.error(f"Database error: {e}")
                     else:
-                        st.balloons()
                         st.success("Contract Executed! (Supabase disconnected)")
 
     # --- BATCH PROCESSING (Multiple Files) ---
@@ -279,7 +277,6 @@ with col_pred2:
         st.caption("📉 **Market Alert:** Regional market rates for sawdust are predicted to drop 5% next week due to seasonal oversupply. Lock in current rates today.")
         if st.button("Auto-Book Predictive Route", type="primary", use_container_width=True):
             st.success("✅ Logistics preemptively scheduled for Friday! Digital Twin Smart Contract staged for final signature.")
-            st.balloons()
 
 st.divider()
 
