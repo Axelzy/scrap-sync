@@ -13,7 +13,6 @@ load_dotenv()
 url: str = os.environ.get("SUPABASE_URL")
 key: str = os.environ.get("SUPABASE_KEY")
 
-# Safely initialize Supabase
 try:
     supabase: Client = create_client(url, key)
 except Exception as e:
@@ -28,6 +27,16 @@ st.set_page_config(
     initial_sidebar_state="expanded" 
 )
 
+# --- SESSION STATE MEMORY ---
+if "uploaded_filenames" not in st.session_state:
+    st.session_state.uploaded_filenames = []
+if "single_match" not in st.session_state:
+    st.session_state.single_match = None
+if "batch_matches" not in st.session_state:
+    st.session_state.batch_matches = None
+if "batch_profit" not in st.session_state:
+    st.session_state.batch_profit = 0.0
+
 # --- CUSTOM CSS ---
 st.markdown("""
     <style>
@@ -39,12 +48,6 @@ st.markdown("""
             background-color: rgba(23, 177, 105, 0.05);
             border-radius: 12px;
             padding: 30px;
-        }
-        div.row-widget.stRadio > div {
-            display: flex;
-            flex-direction: row;
-            justify-content: center;
-            gap: 20px;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -101,96 +104,106 @@ with col_head1:
 with col_head2:
     st.metric(label="Total YTD Revenue", value=get_ytd_profit(), delta="+12% vs LY")
 
-st.write("") 
-
-# --- TOP NAVIGATION BAR ---
-# UPGRADE: Added "Predictive Insights" to the navigation
-selected_nav = st.radio(
-    "Navigation", 
-    ["🚀 Synergy Engine", "📋 Corporate Ledger", "🔮 Predictive Insights", "🌐 Live Market Demand"], 
-    horizontal=True, 
-    label_visibility="collapsed"
-)
-st.divider()
+st.divider() 
 
 # ==========================================
-# PAGE 1: THE SYNERGY ENGINE (Main App)
+# SECTION 1: THE SYNERGY ENGINE
 # ==========================================
-if selected_nav == "🚀 Synergy Engine":
-    upload_container = st.container(border=True)
-    with upload_container:
-        st.markdown("#### 📄 Initialize Synergy Routing")
-        uploaded_files = st.file_uploader(
-            "Upload Manifests (Single or Batch PDF/Images)", 
-            type=["png", "jpg", "jpeg", "pdf"], 
-            accept_multiple_files=True,
-            label_visibility="collapsed"
-        )
+st.header("🚀 Synergy Engine")
+upload_container = st.container(border=True)
+with upload_container:
+    st.markdown("#### 📄 Initialize Synergy Routing")
+    uploaded_files = st.file_uploader(
+        "Upload Manifests (Single or Batch PDF/Images)", 
+        type=["png", "jpg", "jpeg", "pdf"], 
+        accept_multiple_files=True,
+        label_visibility="collapsed"
+    )
 
-    if not uploaded_files:
-        st.info("👋 System Ready. Drag and drop documents to begin AI matchmaking...")
+if not uploaded_files:
+    st.info("👋 System Ready. Drag and drop documents to begin AI matchmaking...")
+    if st.session_state.uploaded_filenames:
+        st.session_state.uploaded_filenames = []
+        st.session_state.single_match = None
+        st.session_state.batch_matches = None
 
-    else:
-        st.write("") 
+else:
+    st.write("") 
+    
+    current_filenames = [f.name for f in uploaded_files]
+    if current_filenames != st.session_state.uploaded_filenames:
+        st.session_state.uploaded_filenames = current_filenames
+        st.session_state.single_match = None
+        st.session_state.batch_matches = None
+        st.session_state.batch_profit = 0.0
+    
+    # --- SINGLE FILE UPLOAD ---
+    if len(uploaded_files) == 1:
+        uploaded_file = uploaded_files[0]
         
-        # --- SINGLE FILE UPLOAD ---
-        if len(uploaded_files) == 1:
-            uploaded_file = uploaded_files[0]
+        if st.session_state.single_match is None:
             with st.status("Initializing ScrapSync Copilot...", expanded=True) as status:
-                st.write("🔍 Extracting visual text via OCR...")
+                st.write("🔍 Extracting visual text via AI...")
                 files = {"file": (uploaded_file.name, uploaded_file, uploaded_file.type)}
                 try:
                     response = requests.post(API_URL, files=files)
                     if response.status_code == 200:
                         data = response.json()
-                        match = data.get("ai_match_results", {})
-                        
-                        if "error" in match:
-                            status.update(label="Analysis Failed", state="error")
-                            st.error(f"AI Alert: {match['error']}")
-                        else:
-                            status.update(label="Synergy Match Confirmed!", state="complete", expanded=False)
-                            st.success("✅ Profitable Synergy Route Established.")
-                            
-                            tab1, tab2, tab3, tab4 = st.tabs(["📊 Match Analytics", "📍 Supply Chain Map", "🌱 ESG Dashboard", "⚖️ Smart Contract"])
-                            
-                            with tab1:
-                                c1, c2, c3 = st.columns(3)
-                                c1.metric("Projected Profit", match.get("estimated_profit_myr"), "Saved")
-                                c2.metric("Target Buyer", match.get('best_buyer_match'), "Verified")
-                                c3.metric("Detected Vol", match.get('quantity_detected'), "Verified")
-                                st.info(match.get('reasoning'))
-                            
-                            with tab2: 
-                                st.map(pd.DataFrame({'lat': [2.0442, 3.1390], 'lon': [102.5689, 101.6869]}))
-                            
-                            with tab3: 
-                                st.line_chart(pd.DataFrame(np.random.randn(10, 2), columns=['CO2', 'Landfill']))
-
-                            with tab4: 
-                                if st.button("Sign & Execute Digital Twin Contract", type="primary", use_container_width=True):
-                                    if supabase:
-                                        try:
-                                            raw_profit = str(match.get("estimated_profit_myr")).replace('RM','').replace(',','').strip()
-                                            supabase.table("transactions").insert({
-                                                "material": match.get("material_detected"),
-                                                "revenue": float(raw_profit) if raw_profit.replace('.','',1).isdigit() else 0.0,
-                                                "buyer": match.get("best_buyer_match")
-                                            }).execute()
-                                            st.balloons()
-                                            st.success("Transaction recorded in live Supabase ledger!")
-                                        except Exception as e:
-                                            st.error(f"Database error: {e}")
-                                    else:
-                                        st.balloons()
-                                        st.success("Contract Executed! (Supabase disconnected)")
-
+                        st.session_state.single_match = data.get("ai_match_results", {})
+                        status.update(label="Synergy Match Confirmed!", state="complete", expanded=False)
+                    else:
+                        st.error(f"System Error: {response.status_code}")
                 except Exception as e:
                     st.error(f"Connection Error: {e}")
 
-        # --- BATCH PROCESSING (Multiple Files) ---
-        elif len(uploaded_files) > 1:
-            st.info(f"📦 Batch Mode Activated: {len(uploaded_files)} documents detected.")
+        # Display from memory
+        if st.session_state.single_match:
+            match = st.session_state.single_match
+            if "error" in match:
+                st.error(f"AI Alert: {match['error']}")
+            else:
+                st.success("✅ Profitable Synergy Route Established.")
+                
+                # Stacked Results instead of Tabs
+                st.markdown("#### 📊 Match Analytics")
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Projected Profit", match.get("estimated_profit_myr"), "Saved")
+                c2.metric("Target Buyer", match.get('best_buyer_match'), "Verified")
+                c3.metric("Detected Vol", match.get('quantity_detected'), "Verified")
+                st.info(match.get('reasoning'))
+                
+                st.write("")
+                st.markdown("#### 📍 Supply Chain Map")
+                st.map(pd.DataFrame({'lat': [2.0442, 3.1390], 'lon': [102.5689, 101.6869]}))
+                
+                st.write("")
+                st.markdown("#### 🌱 ESG Dashboard")
+                st.line_chart(pd.DataFrame(np.random.randn(10, 2), columns=['CO2', 'Landfill']))
+
+                st.write("")
+                st.markdown("#### ⚖️ Smart Contract")
+                if st.button("Sign & Execute Digital Twin Contract", type="primary", use_container_width=True):
+                    if supabase:
+                        try:
+                            raw_profit = str(match.get("estimated_profit_myr")).replace('RM','').replace(',','').strip()
+                            supabase.table("transactions").insert({
+                                "material": match.get("material_detected"),
+                                "revenue": float(raw_profit) if raw_profit.replace('.','',1).isdigit() else 0.0,
+                                "buyer": match.get("best_buyer_match")
+                            }).execute()
+                            st.balloons()
+                            st.success("Transaction recorded in live Supabase ledger!")
+                        except Exception as e:
+                            st.error(f"Database error: {e}")
+                    else:
+                        st.balloons()
+                        st.success("Contract Executed! (Supabase disconnected)")
+
+    # --- BATCH PROCESSING (Multiple Files) ---
+    elif len(uploaded_files) > 1:
+        st.info(f"📦 Batch Mode Activated: {len(uploaded_files)} documents detected.")
+        
+        if st.session_state.batch_matches is None:
             if st.button("Process Monthly Batch", type="primary", use_container_width=True):
                 progress_bar = st.progress(0)
                 status_text = st.empty()
@@ -221,80 +234,82 @@ if selected_nav == "🚀 Synergy Engine":
                         pass 
                     progress_bar.progress((i + 1) / len(uploaded_files))
                 
-                status_text.text("✅ Batch processing complete!")
-                st.write("")
-                st.markdown("### 📊 Monthly Batch Analytics")
-                b_col1, b_col2, b_col3 = st.columns(3)
-                b_col1.metric("Documents Processed", len(batch_results), f"Out of {len(uploaded_files)}")
-                b_col2.metric("Total Projected Profit", f"RM {total_profit:,.2f}", "Calculated by AI")
-                b_col3.metric("New Buyer Routes", len(set([x["Buyer Route"] for x in batch_results])), "Connections made")
-                
-                st.dataframe(pd.DataFrame(batch_results), use_container_width=True)
+                st.session_state.batch_matches = batch_results
+                st.session_state.batch_profit = total_profit
+                st.rerun()
 
-# ==========================================
-# PAGE 2: CORPORATE LEDGER
-# ==========================================
-elif selected_nav == "📋 Corporate Ledger":
-    st.markdown("#### 📋 Historical Transaction Ledger")
-    df = get_ledger_data()
-    if not df.empty:
-        st.dataframe(df, use_container_width=True, hide_index=True)
-    else:
-        st.warning("No transactions found in Supabase. Execute a trade to see it here!")
-
-# ==========================================
-# PAGE 3: PREDICTIVE INSIGHTS (NEW!)
-# ==========================================
-elif selected_nav == "🔮 Predictive Insights":
-    st.markdown("#### 🔮 AI Predictive Intelligence")
-    st.caption("Forecasting waste generation patterns to pre-optimize logistics and lock in market rates.")
-
-    # AI Alert Box
-    st.info("🧠 **Z.AI Forecasting Engine Alert:** A consistent weekly generation pattern has been identified for **Untreated Sawdust** at the Cutting Section (Bay 4).")
-
-    col_pred1, col_pred2 = st.columns([2, 1])
-
-    with col_pred1:
-        st.markdown("##### 📈 30-Day Volume Forecast (Sawdust)")
-        
-        # Creating a bar chart to show historical vs predicted
-        forecast_data = pd.DataFrame({
-            "Recorded Volume (kg)": [420, 440, 455, 480, 0], 
-            "AI Predicted (kg)": [0, 0, 0, 0, 530]
-        }, index=["Week 1", "Week 2", "Week 3", "Current Week", "Next Week (Forecast)"])
-        
-        # Plotting the data
-        st.bar_chart(forecast_data, color=["#17B169", "#0096FF"])
-
-    with col_pred2:
-        st.markdown("##### ⚡ Recommended Actions")
-        action_card = st.container(border=True)
-        with action_card:
-            st.write("📦 **Forecast:** ~530 kg by Friday")
-            st.write("🏢 **Optimum Buyer:** Aisha Fungi Farms")
-            st.write("💰 **Projected Revenue:** RM 159.00")
-            st.divider()
-            st.caption("📉 **Market Alert:** Regional market rates for sawdust are predicted to drop 5% next week due to seasonal oversupply. Lock in current rates today.")
+        if st.session_state.batch_matches is not None:
+            st.write("")
+            st.markdown("### 📊 Monthly Batch Analytics")
+            b_col1, b_col2, b_col3 = st.columns(3)
+            b_col1.metric("Documents Processed", len(st.session_state.batch_matches), f"Out of {len(uploaded_files)}")
+            b_col2.metric("Total Projected Profit", f"RM {st.session_state.batch_profit:,.2f}", "Calculated by AI")
             
-            if st.button("Auto-Book Predictive Route", type="primary", use_container_width=True):
-                st.success("✅ Logistics preemptively scheduled for Friday! Digital Twin Smart Contract staged for final signature.")
-                st.balloons()
+            unique_routes = len(set([x["Buyer Route"] for x in st.session_state.batch_matches])) if st.session_state.batch_matches else 0
+            b_col3.metric("New Buyer Routes", unique_routes, "Connections made")
+            
+            st.dataframe(pd.DataFrame(st.session_state.batch_matches), use_container_width=True)
+
+st.divider()
 
 # ==========================================
-# PAGE 4: LIVE MARKET DEMAND
+# SECTION 2: PREDICTIVE INSIGHTS
 # ==========================================
-elif selected_nav == "🌐 Live Market Demand":
-    st.markdown("#### 🌐 Live Buyer Network")
-    demands = get_live_demands()
-    
-    if demands:
-        cols = st.columns(2)
-        for i, node in enumerate(demands):
-            with cols[i % 2]:
-                with st.container(border=True):
-                    st.markdown(f"**{node['company_name']}**")
-                    st.caption(f"📍 {node['location']} | 🏭 {node['industry']}")
-                    st.write(f"🔍 **Looking for:** {node['material_needed']}")
-                    st.write(f"💰 **Max Budget:** RM {node['max_price_myr']}")
-    else:
-        st.info("No buyers currently listed in demand_nodes.")
+st.header("🔮 Predictive Insights")
+st.caption("Forecasting waste generation patterns to pre-optimize logistics and lock in market rates.")
+st.info("🧠 **Z.AI Forecasting Engine Alert:** A consistent weekly generation pattern has been identified for **Untreated Sawdust** at the Cutting Section (Bay 4).")
+col_pred1, col_pred2 = st.columns([2, 1])
+
+with col_pred1:
+    st.markdown("##### 📈 30-Day Volume Forecast (Sawdust)")
+    forecast_data = pd.DataFrame({
+        "Recorded Volume (kg)": [420, 440, 455, 480, 0], 
+        "AI Predicted (kg)": [0, 0, 0, 0, 530]
+    }, index=["Week 1", "Week 2", "Week 3", "Current Week", "Next Week (Forecast)"])
+    st.bar_chart(forecast_data, color=["#17B169", "#0096FF"])
+
+with col_pred2:
+    st.markdown("##### ⚡ Recommended Actions")
+    action_card = st.container(border=True)
+    with action_card:
+        st.write("📦 **Forecast:** ~530 kg by Friday")
+        st.write("🏢 **Optimum Buyer:** Aisha Fungi Farms")
+        st.write("💰 **Projected Revenue:** RM 159.00")
+        st.divider()
+        st.caption("📉 **Market Alert:** Regional market rates for sawdust are predicted to drop 5% next week due to seasonal oversupply. Lock in current rates today.")
+        if st.button("Auto-Book Predictive Route", type="primary", use_container_width=True):
+            st.success("✅ Logistics preemptively scheduled for Friday! Digital Twin Smart Contract staged for final signature.")
+            st.balloons()
+
+st.divider()
+
+# ==========================================
+# SECTION 3: CORPORATE LEDGER
+# ==========================================
+st.header("📋 Corporate Ledger")
+st.caption("Historical Transaction Ledger")
+df = get_ledger_data()
+if not df.empty:
+    st.dataframe(df, use_container_width=True, hide_index=True)
+else:
+    st.warning("No transactions found in Supabase. Execute a trade to see it here!")
+
+st.divider()
+
+# ==========================================
+# SECTION 4: LIVE MARKET DEMAND
+# ==========================================
+st.header("🌐 Live Market Demand")
+demands = get_live_demands()
+
+if demands:
+    cols = st.columns(2)
+    for i, node in enumerate(demands):
+        with cols[i % 2]:
+            with st.container(border=True):
+                st.markdown(f"**{node['company_name']}**")
+                st.caption(f"📍 {node['location']} | 🏭 {node['industry']}")
+                st.write(f"🔍 **Looking for:** {node['material_needed']}")
+                st.write(f"💰 **Max Budget:** RM {node['max_price_myr']}")
+else:
+    st.info("No buyers currently listed in demand_nodes.")
