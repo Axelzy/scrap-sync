@@ -8,6 +8,7 @@
 
 # Ignore virtual environment file (wont work if changing the virtual environment name [need to add if so])
 .venv
+venv
 
 # Ignore Mac-related hidden file
 .DS_Store
