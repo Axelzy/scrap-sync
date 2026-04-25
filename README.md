@@ -52,3 +52,7 @@ Run ```pip install -r requirements.txt```
 python backend/main.py
 python -m streamlit run frontend/app.py
 ```
+### 4. Login
+
+Email: `pahangmetal@gmail.com`\
+password: `password`
