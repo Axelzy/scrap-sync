@@ -37,10 +37,10 @@ Follow these instructions to run the ScrapSync application on your local machine
 git clone https://github.com/Axelzy/scrap-sync.git
 cd scrap-sync
 ```
-# 1. Install The Dependencies
+### 2. Install The Dependencies
 Run ```pip install -r requirements.txt```
 
-# 2. Run
+### 3. Run
 
 ```bash
 python backend/main.py
