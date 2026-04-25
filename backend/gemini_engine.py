@@ -36,13 +36,15 @@ class GeminiEngine:
             Match the materials found in the image against these available buyers: {json.dumps(buyers_list, indent=2)}
 
             Important Rules for Decision Making (You MUST follow these in order):
-            1. AGGREGATE: If there are multiple items of the SAME material, SUM their weights together to get the Total Quantity.
+            1. AGGREGATE: If there are multiple items of the SAME material, SUM their weights together to get the Total Quantity in kg.
             2. CALCULATE ALL: For EVERY buyer in the database that accepts this material, you MUST calculate their specific Net Profit using this exact formula:
-               - Gross Revenue = (Total Quantity * max_price_myr)
-               - Trucks Needed = Round up (Total Quantity / 1000kg)
+               - Gross Revenue = (Total Quantity in kg * max_price_myr)
+               - Trucks Needed = Round up (Total Quantity in kg / 1000)
                - Transport Cost = (distance_km * RM 1.50 * Trucks Needed)
                - Net Profit = Gross Revenue - Transport Cost
             3. SELECT THE WINNER: Compare the Net Profit of all valid buyers. You MUST set the 'best_buyer_match' to the company that yields the absolute highest Net Profit.
+
+            CRITICAL: The `max_price_myr` in the database is the price PER KG. Even if the price seems unusually high, you MUST perform a direct, literal multiplication (Quantity * max_price_myr) to calculate Gross Revenue. Do NOT assume it is per tonne and do NOT divide the quantity by 1000 for revenue calculation.
 
             You MUST respond STRICTLY in JSON format using this exact schema:
             {{
@@ -86,9 +88,11 @@ class GeminiEngine:
             Important Rules for Decision Making:
             1. For EVERY supplier that matches the requested material, calculate their specific Total Landed Cost:
                - Material Cost = ({volume_kg} * price_per_kg_myr)
-               - Trucks Needed = Round up ({volume_kg} / 1000kg)
+               - Trucks Needed = Round up ({volume_kg} / 1000)
                - Transport Cost = (distance_km * RM 1.50 * Trucks Needed)
                - Total Landed Cost = Material Cost + Transport Cost
+
+            CRITICAL: The `price_per_kg_myr` in the database is the price PER KG. Even if the price seems unusually high, you MUST perform a direct, literal multiplication (volume * price_per_kg_myr) to calculate Material Cost. Do NOT assume it is per tonne and do NOT divide the quantity by 1000 for material cost calculation.
 
             You MUST respond STRICTLY in JSON format using this exact schema:
             {{
