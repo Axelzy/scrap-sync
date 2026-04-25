@@ -4,6 +4,12 @@
 
 **ScrapSync** is an AI-powered B2B reverse-matchmaking platform designed to power the circular economy. It connects industrial manufacturers with local buyers and recyclers, transforming industrial waste (like untreated sawdust and copper wire) into profitable, reusable raw materials.
 
+## 🔗 Project Links
+
+- 🌐 **Live Demo:** [ScrapSync Web App](https://scrap-sync-frontend.onrender.com)
+- 🎥 **Pitching Video (Google Drive):** [Watch Here](https://drive.google.com/drive/folders/1ox8D8IsAwkZe4uH7nqIXbbRdv1b6trTK?usp=sharing)
+
+All the documentation has been include in the github including PRD, SAD, QTAD and Pitchingdeck. all in pdf.
 ## 📁 Project Structure
 <div align="center">
   <img src="scrapsync_logo.jpg" width="30%">
