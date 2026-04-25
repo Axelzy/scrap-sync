@@ -15,6 +15,9 @@
 * 📋 **Corporate Ledger:** An immutable, real-time transaction ledger powered by **Supabase PostgreSQL**.
 * 🔐 **Enterprise Auth:** Secure hybrid registration allowing enterprises to act seamlessly as both buyers and sellers using Supabase Authentication.
 
+## ✨ Project Architecture
+![ScrapSync Logo](projectarc.jpeg)
+
 ## 🛠️ Technology Stack
 
 * **Frontend UI:** Streamlit (Python)
